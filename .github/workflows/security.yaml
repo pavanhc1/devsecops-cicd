@@ -1,0 +1,159 @@
+name: Full Security Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  security-tests:
+    runs-on: ubuntu-latest
+    permissions: write-all
+
+    steps:
+      # Set up Docker Buildx (required for building and scanning images)
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      # Checkout the code
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      # Get values from config.json
+      - name: Parse config.json
+        run: |
+          IMAGE_NAME=$(jq -r '.image_name' config.json)
+          echo "IMAGE_NAME=${IMAGE_NAME}" >> $GITHUB_ENV
+
+      # Verify IMAGE_NAME
+      - name: Verify IMAGE_NAME
+        run: echo "IMAGE_NAME is $IMAGE_NAME"
+
+      # Set up Python for static code analysis
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.8
+
+      # Install dependencies
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+
+      # Static Code Analysis with Bandit
+      - name: Static Code Analysis with Bandit
+        run: |
+          pip install bandit
+          bandit -r app/
+
+      # Dependency Scan with Snyk CLI
+      - name: Dependency Scan with Snyk
+        run: |
+          docker pull snyk/snyk:python-3.11
+          docker run --rm -e SNYK_TOKEN=${{ secrets.SNYK_TOKEN }} -v $(pwd):/project -w /project snyk/snyk:python-3.11 snyk test --file=requirements.txt --token=$SNYK_TOKEN
+
+      # Docker Build and Container Scan with Trivy
+      - name: Docker Build and Container Scan with Trivy
+        run: |
+          set -e  # Exit immediately if any command fails
+
+          echo "Verifying Docker setup..."
+          docker info
+
+          IMAGE_NAME="flask-app"
+
+          echo "Building the Docker image..."
+          docker build -t library/$IMAGE_NAME .
+
+          echo "Verifying if the image was built successfully..."
+          docker inspect --type=image library/$IMAGE_NAME:latest > /dev/null || { echo "Image build failed"; exit 1; }
+
+          echo "Logging into Docker Hub..."
+          echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.DOCKER_USERNAME }} --password-stdin
+
+          echo "Running Trivy scan..."
+          docker pull aquasec/trivy:0.57.1
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasec/trivy:0.57.1 \
+            image library/$IMAGE_NAME
+
+      # Secrets Scanning with Gitleaks
+      - name: Secrets Scanning with Gitleaks
+        uses: zricethezav/gitleaks-action@v2
+        with:
+          args: --no-git --path=.
+                
+      # Run Flask application container
+      - name: Run Flask App
+        run: |
+          docker run -d --name flask-app -p 5001:5001 \
+            -e DATABASE_URL=${{ secrets.DATABASE_URL }} \
+            -e SECRET_KEY=${{ secrets.SECRET_KEY }} \
+            flask-app
+            
+      # Inspect the container status
+      - name: Debug Flask Container
+        run: |
+          docker ps -a
+          docker logs flask-app
+
+      # Wait for Flask App to start
+      - name: Wait for Flask App to Start
+        run: |
+          for i in {1..20}; do
+            if curl -s http://localhost:5001 > /dev/null; then
+              echo "Flask app is up and running."
+              break
+            fi
+            echo "Waiting for Flask app..."
+            sleep 5
+          done
+          curl -s http://localhost:5001 || { echo "Flask app failed to start."; exit 1; }
+      
+      # Run OWASP ZAP Scan (DAST)
+      - name: Run OWASP ZAP Scan
+        uses: zaproxy/action-full-scan@v0.7.0
+        with:
+          target: 'http://localhost:5001'
+
+      # Publish ZAP Report to GitHub Pages
+      - name: Publish ZAP Report to GitHub Pages
+        run: |
+          REPORT_NAME="zap_report_$(date +'%Y%m%d%H%M%S').html"
+          mv report_html.html $REPORT_NAME
+          git config --global user.name "github-actions"
+          git config --global user.email "actions@github.com"
+          
+          git fetch origin
+
+          git checkout gh-pages
+          git rebase origin/gh-pages
+          
+          echo "Push new report to gh-pages branch..."
+          cp $REPORT_NAME index.html
+          git add index.html
+          git commit -m "Publish ZAP report: $REPORT_NAME (Run ID: $GITHUB_RUN_ID)"
+          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} gh-pages
+
+      # Clean up Flask application container
+      - name: Stop and Remove Flask App
+        if: always()
+        run: |
+          docker stop flask-app
+          docker rm flask-app
+
+      # Secure Secrets Injection
+      - name: Inject Secrets Securely
+        run: |
+          echo ${{ secrets.SECRET_KEY }} > .env
+          echo ${{ secrets.DATABASE_URL }} >> .env
+
+      # Push Docker Image to Docker Hub
+      - name: Push Docker Image to Docker Hub
+        run: |
+          docker tag $IMAGE_NAME ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest
+          docker push ${{ secrets.DOCKER_USERNAME }}/$IMAGE_NAME:latest
