@@ -121,8 +121,10 @@ jobs:
       # Run OWASP ZAP Scan (DAST)
       - name: Manually Run ZAP Baseline Scan
         run: |
+          echo "⚡ Pulling ZAP Image..."
+          docker pull ghcr.io/zaproxy/zaproxy:stable
           echo "⚡ Starting ZAP Baseline Scan..."
-          docker run --rm owasp/zap2docker-stable zap-baseline.py \
+          docker run --rm ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t http://localhost:5001 \
             -J zap_report.json \
             -r zap_report.html \
