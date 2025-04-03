@@ -128,7 +128,7 @@ jobs:
             -t http://localhost:5001 \
             -J zap_report.json \
             -r zap_report.html \
-            --debug
+            - d
       # - name: Run OWASP ZAP Scan
       #   uses: zaproxy/action-full-scan@v0.7.0
       #   with:
