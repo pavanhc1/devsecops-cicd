@@ -110,7 +110,7 @@ jobs:
               break
             fi
             echo "Waiting for Flask app..."
-            sleep 5
+            sleep 10
           done
           curl -s http://localhost:5001 || { echo "Flask app failed to start."; exit 1; }
       
@@ -119,7 +119,7 @@ jobs:
         uses: zaproxy/action-full-scan@v0.7.0
         with:
           target: 'http://localhost:5001'
-          cmd_options: '-J zap_report.json -r zap_report.html'
+          cmd_options: '-t 120 -J zap_report.json -r zap_report.html'
 
       # Publish ZAP Report to GitHub Pages
       - name: Publish ZAP Report to GitHub Pages
@@ -144,10 +144,10 @@ jobs:
           git pull --rebase origin gh-pages
 
           # Push the new report to gh-pages branch
-          echo "📢 Pushing new ZAP report to GitHub Pages..."
+          echo "Pushing new ZAP report to GitHub Pages..."
           cp $REPORT_NAME index.html
           git add index.html
-          git commit -m "📄 Publish ZAP report: $REPORT_NAME (Run ID: $GITHUB_RUN_ID)"
+          git commit -m "Publish ZAP report: $REPORT_NAME (Run ID: $GITHUB_RUN_ID)"
           git push origin gh-pages
 
 
