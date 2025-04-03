@@ -119,25 +119,37 @@ jobs:
         uses: zaproxy/action-full-scan@v0.7.0
         with:
           target: 'http://localhost:5001'
+          cmd_options: '-J zap_report.json -r zap_report.html'
 
       # Publish ZAP Report to GitHub Pages
       - name: Publish ZAP Report to GitHub Pages
         run: |
+          # Check if the report exists
+          if [ ! -f zap_report.html ]; then
+            echo "❌ Error: zap_report.html not found! ZAP scan may have failed."
+            exit 1
+          fi
+
+          # Rename the report with a timestamp
           REPORT_NAME="zap_report_$(date +'%Y%m%d%H%M%S').html"
-          mv report_html.html $REPORT_NAME
+          mv zap_report.html $REPORT_NAME
+
+          # Configure Git user for commit
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          
-          git fetch origin
 
-          git checkout gh-pages
-          git rebase origin/gh-pages
-          
-          echo "Push new report to gh-pages branch..."
+          # Fetch the latest changes from gh-pages branch
+          git fetch origin
+          git checkout gh-pages || git checkout --orphan gh-pages
+          git pull --rebase origin gh-pages
+
+          # Push the new report to gh-pages branch
+          echo "📢 Pushing new ZAP report to GitHub Pages..."
           cp $REPORT_NAME index.html
           git add index.html
-          git commit -m "Publish ZAP report: $REPORT_NAME (Run ID: $GITHUB_RUN_ID)"
-          git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} gh-pages
+          git commit -m "📄 Publish ZAP report: $REPORT_NAME (Run ID: $GITHUB_RUN_ID)"
+          git push origin gh-pages
+
 
       # Clean up Flask application container
       - name: Stop and Remove Flask App
