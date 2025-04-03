@@ -124,7 +124,7 @@ jobs:
           echo "⚡ Pulling ZAP Image..."
           docker pull ghcr.io/zaproxy/zaproxy:stable
           echo "⚡ Starting ZAP Baseline Scan..."
-          docker run --rm ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+          docker run --rm -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
             -t http://localhost:5001 \
             -J zap_report.json \
             -r zap_report.html \
