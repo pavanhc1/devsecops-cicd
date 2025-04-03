@@ -131,8 +131,8 @@ jobs:
           # chmod 777 $(pwd)/zap-wrk
           # echo "Determined runner's internal IP: $RUNNER_IP"
           echo "Starting ZAP Baseline Scan..."
-          docker run --rm --network=host ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://localhost:5001 \
+          docker run --rm --network=my_custom_network ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://flask-app:5001 \
             -J zap_report.json \
             -r zap_report.html \
             - d
