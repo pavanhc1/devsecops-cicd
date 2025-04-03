@@ -119,6 +119,9 @@ jobs:
         run: curl -v http://localhost:5001 || exit 1
       
       # Run OWASP ZAP Scan (DAST)
+      - name: Get Runner's Internal IP
+        run: echo "RUNNER_IP=$(ip route | awk 'NR==1 {print $3}')" >> $GITHUB_ENV
+
       - name: Manually Run ZAP Baseline Scan
         run: |
           echo "Pulling ZAP Image..."
@@ -126,9 +129,10 @@ jobs:
           echo "Adjusting permissions..."
           mkdir -p $(pwd)/zap-wrk
           chmod 777 $(pwd)/zap-wrk
+          echo "Determined runner's internal IP: $RUNNER_IP"
           echo "Starting ZAP Baseline Scan..."
           docker run --rm -v $(pwd)/zap-wrk:/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://host.docker.internal:5001 \
+            -t http://$RUNNER_IP:5001 \
             -J zap_report.json \
             -r zap_report.html \
             - d
