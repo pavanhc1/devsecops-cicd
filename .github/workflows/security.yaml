@@ -113,6 +113,10 @@ jobs:
             sleep 10
           done
           curl -s http://localhost:5001 || { echo "Flask app failed to start."; exit 1; }
+
+      # Ensure the Target is Reachable
+      - name: Check if target is reachable
+        run: curl -v http://localhost:5001 || exit 1
       
       # Run OWASP ZAP Scan (DAST)
       - name: Run OWASP ZAP Scan
