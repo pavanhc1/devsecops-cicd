@@ -121,11 +121,14 @@ jobs:
       # Run OWASP ZAP Scan (DAST)
       - name: Manually Run ZAP Baseline Scan
         run: |
-          echo "⚡ Pulling ZAP Image..."
+          echo "Pulling ZAP Image..."
           docker pull ghcr.io/zaproxy/zaproxy:stable
-          echo "⚡ Starting ZAP Baseline Scan..."
-          docker run --rm -v $(pwd):/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://localhost:5001 \
+          echo "Adjusting permissions..."
+          mkdir -p $(pwd)/zap-wrk
+          chmod 777 $(pwd)/zap-wrk
+          echo "Starting ZAP Baseline Scan..."
+          docker run --rm -v $(pwd)/zap-wrk:/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://host.docker.internal:5001 \
             -J zap_report.json \
             -r zap_report.html \
             - d
