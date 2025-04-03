@@ -114,9 +114,9 @@ jobs:
           done
           curl -s http://localhost:5001 || { echo "Flask app failed to start."; exit 1; }
 
-      # Ensure the Target is Reachable
-      - name: Check if target is reachable
-        run: curl -v http://localhost:5001 || exit 1
+      # # Ensure the Target is Reachable
+      # - name: Check if target is reachable
+      #   run: curl -v hhttp://10.1.0.1:5001 || exit 1
       
       # Run OWASP ZAP Scan (DAST)
       - name: Get Runner's Internal IP
@@ -124,15 +124,15 @@ jobs:
 
       - name: Manually Run ZAP Baseline Scan
         run: |
-          echo "Pulling ZAP Image..."
-          docker pull ghcr.io/zaproxy/zaproxy:stable
-          echo "Adjusting permissions..."
-          mkdir -p $(pwd)/zap-wrk
-          chmod 777 $(pwd)/zap-wrk
-          echo "Determined runner's internal IP: $RUNNER_IP"
+          # echo "Pulling ZAP Image..."
+          # docker pull ghcr.io/zaproxy/zaproxy:stable
+          # echo "Adjusting permissions..."
+          # mkdir -p $(pwd)/zap-wrk
+          # chmod 777 $(pwd)/zap-wrk
+          # echo "Determined runner's internal IP: $RUNNER_IP"
           echo "Starting ZAP Baseline Scan..."
-          docker run --rm -v $(pwd)/zap-wrk:/zap/wrk ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-            -t http://$RUNNER_IP:5001 \
+          docker run --rm --network=host ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t http://localhost:5001 \
             -J zap_report.json \
             -r zap_report.html \
             - d
