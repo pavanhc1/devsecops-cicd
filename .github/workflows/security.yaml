@@ -147,11 +147,6 @@ jobs:
           target: 'http://localhost:5001'
           cmd_options: '-I -J zap_output/zap_report.json -r zap_output/zap_report.html'
 
-      - name: Debug - List ZAP Output Files
-        run: ls -lah zap_output
-
-
-
       # Publish ZAP Report to GitHub Pages
       - name: Verify and Publish ZAP Reports
         run: |
@@ -168,18 +163,28 @@ jobs:
            echo "❌ Error: zap_report.html not found!"
            exit 1
           fi
+
+          mv zap_output/zap_report.html zap_report.html
+          mv zap_output/zap_report.json zap_report.json
       
-          REPORT_NAME="zap_report_$(date +'%Y%m%d%H%M%S').html"
-          mv zap_output/zap_report.html $REPORT_NAME
+          # REPORT_NAME="zap_report_$(date +'%Y%m%d%H%M%S').html"
+          # mv zap_output/zap_report.html $REPORT_NAME
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
-          git fetch origin
-          git checkout gh-pages || git checkout --orphan gh-pages
-          git pull --rebase origin gh-pages
 
-          cp $REPORT_NAME index.html
-          git add index.html
-          git commit -m "Publish ZAP report: $REPORT_NAME (Run ID: $GITHUB_RUN_ID)"
+          git fetch origin gh-pages || echo "gh-pages branch does not exist yet."
+          if ! git rev-parse --verify gh-pages >/dev/null 2>&1; then
+            echo "Creating gh-pages branch..."
+            git checkout --orphan gh-pages
+            git commit --allow-empty -m "Initial commit for GitHub Pages"
+            git push origin gh-pages
+          else
+            git checkout gh-pages
+            git pull --rebase origin gh-pages
+          fi
+          cp zap_report.html index.html
+          git add index.html zap_report.json
+          git commit -m "Publish ZAP report (Run ID: $GITHUB_RUN_ID)"
           git push origin gh-pages
       # - name: Publish ZAP Report to GitHub Pages
       #   run: |
