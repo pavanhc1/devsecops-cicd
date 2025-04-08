@@ -155,12 +155,12 @@ jobs:
 
           # Check if JSON and HTML reports exist
           if [ ! -f zap_output/zap_report.json ]; then
-            echo "❌ Error: zap_report.json not found! ZAP scan may have failed."
+            echo "Error: zap_report.json not found! ZAP scan may have failed."
             exit 1
           fi
 
           if [ ! -f zap_output/zap_report.html ]; then
-           echo "❌ Error: zap_report.html not found!"
+           echo "Error: zap_report.html not found!"
            exit 1
           fi
 
@@ -190,7 +190,7 @@ jobs:
       #   run: |
       #     # Check if the report exists
       #     if [ ! -f zap_report.html ]; then
-      #       echo "❌ Error: zap_report.html not found! ZAP scan may have failed."
+      #       echo "Error: zap_report.html not found! ZAP scan may have failed."
       #       exit 1
       #     fi
 
