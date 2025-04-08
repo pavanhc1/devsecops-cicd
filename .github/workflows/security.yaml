@@ -176,6 +176,8 @@ jobs:
           if ! git rev-parse --verify gh-pages >/dev/null 2>&1; then
             echo "Creating gh-pages branch..."
             git checkout --orphan gh-pages
+             echo "# GitHub Pages" > index.html
+             git add index.html
             git commit --allow-empty -m "Initial commit for GitHub Pages"
             git push origin gh-pages
           else
