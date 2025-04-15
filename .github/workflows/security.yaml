@@ -115,28 +115,6 @@ jobs:
           done
           curl -s http://localhost:5001 || { echo "Flask app failed to start."; exit 1; }
 
-      # # Ensure the Target is Reachable
-      # - name: Check if target is reachable
-      #   run: curl -v hhttp://10.1.0.1:5001 || exit 1
-      
-      # Run OWASP ZAP Scan (DAST)
-      # - name: Get Runner's Internal IP
-      #   run: echo "RUNNER_IP=$(ip route | awk 'NR==1 {print $3}')" >> $GITHUB_ENV
-
-      # - name: Manually Run ZAP Baseline Scan
-      #   run: |
-      #     # echo "Pulling ZAP Image..."
-      #     # docker pull ghcr.io/zaproxy/zaproxy:stable
-      #     # echo "Adjusting permissions..."
-      #     # mkdir -p $(pwd)/zap-wrk
-      #     # chmod 777 $(pwd)/zap-wrk
-      #     # echo "Determined runner's internal IP: $RUNNER_IP"
-      #     # echo "Starting ZAP Baseline Scan..."
-      #     # docker run --rm --network=my_custom_network ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
-      #     #   -t http://flask-app:5001 \
-      #     #   -J zap_report.json \
-      #     #   -r zap_report.html \
-      #     #   - d
       - name: Adjust permissions for ZAP
         run: |
           mkdir -p zap_output
@@ -189,35 +167,7 @@ jobs:
           git add index.html zap_report.json
           git commit -m "Publish ZAP report (Run ID: $GITHUB_RUN_ID)"
           git push origin gh-pages
-      # - name: Publish ZAP Report to GitHub Pages
-      #   run: |
-      #     # Check if the report exists
-      #     if [ ! -f zap_report.html ]; then
-      #       echo "Error: zap_report.html not found! ZAP scan may have failed."
-      #       exit 1
-      #     fi
-
-      #     # Rename the report with a timestamp
-      #     REPORT_NAME="zap_report_$(date +'%Y%m%d%H%M%S').html"
-      #     mv zap_report.html $REPORT_NAME
-
-      #     # Configure Git user for commit
-      #     git config --global user.name "github-actions"
-      #     git config --global user.email "actions@github.com"
-
-      #     # Fetch the latest changes from gh-pages branch
-      #     git fetch origin
-      #     git checkout gh-pages || git checkout --orphan gh-pages
-      #     git pull --rebase origin gh-pages
-
-      #     # Push the new report to gh-pages branch
-      #     echo "Pushing new ZAP report to GitHub Pages..."
-      #     cp $REPORT_NAME index.html
-      #     git add index.html
-      #     git commit -m "Publish ZAP report: $REPORT_NAME (Run ID: $GITHUB_RUN_ID)"
-      #     git push origin gh-pages
-
-
+      
       # Clean up Flask application container
       - name: Stop and Remove Flask App
         if: always()
