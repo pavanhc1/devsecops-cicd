@@ -85,6 +85,7 @@ jobs:
       - name: Secrets Scanning with Gitleaks
         uses: zricethezav/gitleaks-action@v2
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
           args: --no-git --path=.
                 
       # Run Flask application container
