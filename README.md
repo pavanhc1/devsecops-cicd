@@ -109,6 +109,7 @@ jobs:
         uses: zaproxy/action-full-scan@v0.7.0
         with:
           target: 'http://localhost:5001'
+          cmd_options: '-I -J zap_output/zap_report.json -r zap_output/zap_report.html'
 
       # Secure Secrets Injection
       - name: Inject Secrets Securely
